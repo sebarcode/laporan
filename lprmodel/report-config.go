@@ -16,6 +16,12 @@ const (
 	SearchFunction   SearchType = "Function" // function prototype: func (ctx *kaos.Context, payload interface{}) (*dbflex.QueryParam, error)
 )
 
+type ReportField struct {
+	Field     string
+	FieldType string
+	Format    string
+}
+
 type ReportConfig struct {
 	orm.DataModelBase `bson:"-" json:"-"`
 	ID                string `bson:"_id" json:"_id" key:"1" form_read_only_edit:"1" form_section:"General" form_section_auto_col:"2"`
@@ -23,6 +29,7 @@ type ReportConfig struct {
 	SearchType        SearchType
 	GetMethod         string
 	GetUrl            string
+	ViewSetups        []ReportField
 	Created           time.Time `form_kind:"datetime" form_read_only:"1" grid:"hide" form_section:"Time Info" form_section_auto_col:"2"`
 	LastUpdate        time.Time `form_kind:"datetime" form_read_only:"1" grid:"hide" form_section:"Time Info"`
 }

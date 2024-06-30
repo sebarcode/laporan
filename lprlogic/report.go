@@ -27,7 +27,7 @@ func NewReportRunner(enc byter.Byter, prefix string) *ReportRunner {
 	return rr
 }
 
-func (rr *ReportRunner) Run(ctx *kaos.Context, report *lprmodel.ReportConfig, payload codekit.M, searchFn SearchFunction) ([]codekit.M, error) {
+func (rr *ReportRunner) Run(ctx *kaos.Context, report *lprmodel.ReportConfig, payload codekit.M, searchFn SearchFunction) (*lprmodel.ReportResult, error) {
 	if ctx == nil {
 		return nil, errors.New("ctx is null")
 	}
@@ -104,10 +104,26 @@ func (rr *ReportRunner) Run(ctx *kaos.Context, report *lprmodel.ReportConfig, pa
 		return nil, fmt.Errorf("empty response: %s", getUrl)
 	}
 
-	res := []codekit.M{}
-	err = rr.eder.DecodeTo(bs, &res, nil)
+	dataset := []codekit.M{}
+	err = rr.eder.DecodeTo(bs, &dataset, nil)
 	if err != nil {
 		return nil, fmt.Errorf("get response: %s ", err.Error())
 	}
-	return res, nil
+
+	resDs := make([]codekit.M, len(dataset))
+	if len(report.ViewSetups) == 0 {
+		resDs = dataset
+	} else {
+		for i, d := range dataset {
+			ds := codekit.M{}
+			for k, v := range d {
+				ds.Set(k, v)
+			}
+			resDs[i] = ds
+		}
+	}
+
+	return &lprmodel.ReportResult{
+		Data: resDs,
+	}, nil
 }

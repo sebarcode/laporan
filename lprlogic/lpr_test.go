@@ -41,8 +41,8 @@ func TestLaporan(t *testing.T) {
 		convey.So(err, convey.ShouldBeNil)
 
 		convey.Convey("validate result", func() {
-			convey.So(len(res), convey.ShouldBeGreaterThan, 0)
-			convey.Printf(" len of result is %d", len(res))
+			convey.So(len(res.Data), convey.ShouldBeGreaterThan, 0)
+			convey.Printf(" len of result is %d", len(res.Data))
 		})
 	})
 }
