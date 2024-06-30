@@ -20,14 +20,22 @@ type ReportRunner struct {
 	prefix string
 }
 
-func NewReportRunner(enc *byter.Byter, prefix string) *ReportRunner {
+func NewReportRunner(enc byter.Byter, prefix string) *ReportRunner {
 	rr := new(ReportRunner)
-	rr.eder = *enc
+	rr.eder = enc
 	rr.prefix = prefix
 	return rr
 }
 
-func (rr *ReportRunner) Run(ctx *kaos.Context, report *lprmodel.Report, payload codekit.M, searchFn SearchFunction) ([]codekit.M, error) {
+func (rr *ReportRunner) Run(ctx *kaos.Context, report *lprmodel.ReportConfig, payload codekit.M, searchFn SearchFunction) ([]codekit.M, error) {
+	if ctx == nil {
+		return nil, errors.New("ctx is null")
+	}
+
+	if report == nil {
+		return nil, errors.New("report config is null")
+	}
+
 	var (
 		req *http.Request
 		err error
@@ -37,7 +45,9 @@ func (rr *ReportRunner) Run(ctx *kaos.Context, report *lprmodel.Report, payload 
 	getUrl := report.GetUrl
 	if rr.prefix != "" {
 		getUrl, err = url.JoinPath(rr.prefix, getUrl)
-		return nil, fmt.Errorf("report get url: %s, %s", getUrl, err.Error())
+		if err != nil {
+			return nil, fmt.Errorf("report get url: %s, %s", getUrl, err.Error())
+		}
 	}
 
 	qp := new(dbflex.QueryParam)
@@ -64,7 +74,13 @@ func (rr *ReportRunner) Run(ctx *kaos.Context, report *lprmodel.Report, payload 
 	}
 
 	reqReader := bytes.NewReader(payloadBytes)
-	req, err = http.NewRequest(getUrl, report.GetUrl, reqReader)
+	if report.GetMethod == "" {
+		report.GetMethod = http.MethodPost
+	}
+	req, err = http.NewRequest(report.GetMethod, getUrl, reqReader)
+	if err != nil {
+		return nil, errors.New("invoke rest: " + err.Error())
+	}
 	for key, vals := range origRequest.Header {
 		for _, val := range vals {
 			req.Header.Add(key, val)
@@ -82,7 +98,10 @@ func (rr *ReportRunner) Run(ctx *kaos.Context, report *lprmodel.Report, payload 
 
 	bs, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("get response: %s ", err.Error())
+		return nil, fmt.Errorf("get response: %s, %s ", getUrl, err.Error())
+	}
+	if len(bs) == 0 {
+		return nil, fmt.Errorf("empty response: %s", getUrl)
 	}
 
 	res := []codekit.M{}
